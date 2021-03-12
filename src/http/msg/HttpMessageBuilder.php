@@ -115,7 +115,7 @@ abstract class HttpMessageBuilder implements MessageBuilder {
             return null;
         }
 
-        return $header->join("; ");
+        return $header->join(", ");
     }
 
     /**
@@ -123,6 +123,10 @@ abstract class HttpMessageBuilder implements MessageBuilder {
      */
     #[Override("im\http\msg\MessageBuilder")]
     public function addHeader(string $name, string ...$values): void {
+        if (count($values) == 0) {
+            throw new Exception("You must provide at least one value to the header");
+        }
+
         $name = $this->headerKey($name);
         $header = $this->headers->get($name);
 
@@ -137,13 +141,21 @@ abstract class HttpMessageBuilder implements MessageBuilder {
         foreach ($values as $value) {
             $value = $this->filterHeader($value);
 
-            if (strpos($value, ";") !== false) {
+            if (preg_match("/^[a-z]+, [0-9]{2} [a-z]+ [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} [a-z]+$/i", $value)) {
+                $header->add($value);
+
+            } else if ($name == "Cookie") {
                 foreach (explode(";", $value) as $subval) {
-                    $header->add(trim($subval, " \t"));
+                    $header->add(trim($subval));
                 }
 
+            } else if ($name == "Set-Cookie") {
+                $header->add($value);
+
             } else {
-                $header->add(trim($value, " \t"));
+                foreach (explode(",", $value) as $subval) {
+                    $header->add(trim($subval));
+                }
             }
         }
 
@@ -155,24 +167,12 @@ abstract class HttpMessageBuilder implements MessageBuilder {
      */
     #[Override("im\http\msg\MessageBuilder")]
     public function setHeader(string $name, string ...$values): void {
-        $name = $this->headerKey($name);
-
-        $this->headers->set($name, ($header = new Vector()));
-
-        foreach ($values as $value) {
-            $value = $this->filterHeader($value);
-
-            if (strpos($value, ";") !== false) {
-                foreach (explode(";", $value) as $subval) {
-                    $header->add(trim($subval, " \t"));
-                }
-
-            } else {
-                $header->add(trim($value, " \t"));
-            }
+        if (count($values) == 0) {
+            throw new Exception("You must provide at least one value to the header");
         }
 
-        $header->lock();
+        $this->removeHeader($name);
+        $this->addHeader($name, ...$values);
     }
 
     /**
@@ -232,6 +232,30 @@ abstract class HttpMessageBuilder implements MessageBuilder {
     }
 
     /**
+     * @inheritDoc
+     */
+    #[Override("im\http\msg\MessageBuilder")]
+    public function toString(): string {
+        $headers = [];
+
+        foreach ($this as $name => $value) {
+            if ($name == "Cookie") {
+                $headers[] = sprintf("Cookie: %s", $value->join("; "));
+
+            } else if ($name == "Set-Cookie") {
+                foreach ($value as $cookie) {
+                    $headers[] = sprintf("Set-Cookie: %s", $cookie);
+                }
+
+            } else {
+                $headers[] = sprintf("%s: %s", $name, $value->join(", "));
+            }
+        }
+
+        return implode("\n", $headers);
+    }
+
+    /**
      * @php
      */
     public function __toString() {
@@ -263,6 +287,7 @@ abstract class HttpMessageBuilder implements MessageBuilder {
      * @internal
      */
     protected function filterHeader(string $value): string {
+        $value = trim(preg_replace("/[ \t]+/", " ", $value));
         $length = strlen($value);
         $filtered = '';
 

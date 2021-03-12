@@ -232,14 +232,10 @@ class HttpRequestBuilder extends HttpMessageBuilder implements RequestBuilder {
                 $headers = $this->getHeader("Cookie");
 
                 foreach ($headers as $header) {
-                    $cookies = explode("; ", implode("; ", $header));
+                    $name = substr($header, 0, ($pos = strpos($header, "=")));
+                    $value = urldecode(substr($header, $pos+1));
 
-                    foreach ($cookies as $cookie) {
-                        $name = substr($cookie, 0, ($pos = strpos($cookie, "=")));
-                        $value = urldecode(substr($cookie, $pos+1));
-
-                        $map->set($name, $value);
-                    }
+                    $map->set($name, $value);
                 }
 
                 break;
@@ -270,7 +266,7 @@ class HttpRequestBuilder extends HttpMessageBuilder implements RequestBuilder {
         $map = $this->params->get($type);
 
         if ($map == null) {
-            $this->params->set($type, ($map = buildParams($type)));
+            $this->params->set($type, ($map = $this->buildParams($type)));
         }
 
         return $map->get($name);
@@ -284,7 +280,7 @@ class HttpRequestBuilder extends HttpMessageBuilder implements RequestBuilder {
         $map = $this->params->get($type);
 
         if ($map == null) {
-            $this->params->set($type, ($map = buildParams($type)));
+            $this->params->set($type, ($map = $this->buildParams($type)));
         }
 
         return $map->isset($name);
@@ -298,7 +294,7 @@ class HttpRequestBuilder extends HttpMessageBuilder implements RequestBuilder {
         $map = $this->params->get($type);
 
         if ($map == null) {
-            $this->params->set($type, ($map = buildParams($type)));
+            $this->params->set($type, ($map = $this->buildParams($type)));
         }
 
         $map->set($name, $value);
@@ -313,7 +309,7 @@ class HttpRequestBuilder extends HttpMessageBuilder implements RequestBuilder {
                 && $this->parser != null) {
 
             if ($this->hasHeader("content-type")) {
-                $type = $this->getHeader("content-type")->join(";");
+                $type = $this->getHeaderLine("content-type");
 
             } else {
                 $type = "text/plain";
@@ -361,17 +357,11 @@ class HttpRequestBuilder extends HttpMessageBuilder implements RequestBuilder {
      */
     #[Override("im\http\msg\RequestBuilder")]
     public function toString(): string {
-        $headers = [];
-
-        foreach ($this as $name => $value) {
-            $headers[] = sprintf("%s: %s", $name, $value->join("; "));
-        }
-
         return sprintf("%s %s HTTP/%s\n\n%s\n\n%s",
             $this->getMethod(),
             $this->getRequestTarget(),
             $this->getProtocolVersion(),
-            implode("\n", $headers),
+            parent::toString(),
             $this->getBody()->toString()
         );
     }

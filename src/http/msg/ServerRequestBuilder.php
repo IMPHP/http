@@ -170,7 +170,13 @@ class ServerRequestBuilder extends HttpRequestBuilder {
          */
 
         if ($this->hasHeader("content-type")) {
-            $type = $this->getHeader("content-type")->get(0);
+            $type = $this->getHeaderLine("content-type");
+
+            if (($pos = strpos($type, ";")) !== false
+                        || ($pos = strpos($type, ",")) !== false) {
+
+                $type = substr($type, $pos);
+            }
 
             if ($this->getMethod() == "POST" && in_array($type, ["multipart/form-data", "application/x-www-form-urlencoded"])) {
                 $this->parsedBody = $_POST;

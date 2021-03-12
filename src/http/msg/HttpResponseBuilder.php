@@ -135,21 +135,21 @@ class HttpResponseBuilder extends HttpMessageBuilder implements ResponseBuilder 
      */
     #[Override("im\http\msg\ResponseBuilder")]
     public function toString(): string {
-        $headers = [];
+        $headers = parent::toString();
 
         if (!$this->hasHeader("content-type")) {
-            $headers[] = sprintf("Content-Type: text/html; charset=utf-8");
-        }
+            if (!empty($headers)) {
+                $headers = "\n" . $headers;
+            }
 
-        foreach ($this as $name => $value) {
-            $headers[] = sprintf("%s: %s", $name, $value->join("; "));
+            $headers = "Content-Type: text/html; charset=utf-8" . $headers;
         }
 
         return sprintf("HTTP/%s %s %s\n\n%s\n\n%s",
             $this->getProtocolVersion(),
             $this->getStatusCode(),
             $this->getStatusReason(),
-            implode("\n", $headers),
+            $headers,
             $this->getBody()->toString()
         );
     }

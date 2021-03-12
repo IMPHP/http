@@ -49,7 +49,7 @@ interface MessageBuilder extends Message {
      *      ```
      *
      *      ```
-     *      Output: text/html; utf-8
+     *      Output: text/html, utf-8
      *      ```
      */
     function addHeader(string $name, string ...$values): void;
