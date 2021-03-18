@@ -68,6 +68,14 @@ class HttpUri implements Uri {
      * @inheritDoc
      */
     #[Override("im\http\msg\Uri")]
+    function getBaseUrl(): ?string {
+        return $this->uri->getBaseUrl();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http\msg\Uri")]
     public function getBasePath(): ?string {
         return $this->uri->getBasePath();
     }

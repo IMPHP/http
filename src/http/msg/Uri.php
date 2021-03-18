@@ -64,6 +64,18 @@ interface Uri {
     function getQuery(): ?string;
 
     /**
+     * Get the base url for the request
+     *
+     * The base url is everything prepending the path,
+     * like scheme, domain, base path etc.
+     *
+     * @return
+     *      This will return `NULL` if there is noting to
+     *      build the base url with. 
+     */
+    function getBaseUrl(): ?string;
+
+    /**
      * Get the base path for the request
      *
      * Base path is the part of the path that is not part of

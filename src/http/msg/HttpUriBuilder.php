@@ -170,6 +170,28 @@ class HttpUriBuilder implements UriBuilder {
      * @inheritDoc
      */
     #[Override("im\http\msg\UriBuilder")]
+    function getBaseUrl(): ?string {
+        $str = new StringBuilder();
+
+        if (($scheme = $this->getScheme()) != null) {
+            $str->append($scheme, "://");
+        }
+
+        if (($authority = $this->getAuthority()) != null) {
+            $str->append($authority);
+        }
+
+        if (($basePath = $this->getBasePath()) != null) {
+            $str->append( $authority != null ? $basePath : ltrim($basePath, "/") );
+        }
+
+        return $str->length() > 0 ? $str->toString() : null;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http\msg\UriBuilder")]
     public function getBasePath(): ?string {
         if ($this->basePath != null) {
             return "/" . trim($this->basePath, "/");
