@@ -14,6 +14,18 @@ You can view the [Full Documentation](docs/http.md) to lean more about what this
 
 ### Installation
 
+__Using .phar library__
+
+```sh
+wget https://github.com/IMPHP/http/releases/download/<version>/imphp-http.phar
+```
+
+```php
+require "imphp-http.phar";
+
+...
+```
+
 __Clone via git__
 
 ```sh
