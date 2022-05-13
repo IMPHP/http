@@ -33,8 +33,13 @@ class HttpResponse extends HttpMessage implements Response {
      * @param $response
      *      A response or response builder
      */
-    public function __construct(Response $response) {
-        parent::__construct($response);
+    public function __construct(Response $response = NULL) {
+        if ($response == NULL) {
+            parent::__construct(new HttpResponseBuilder());
+
+        } else {
+            parent::__construct($response);
+        }
     }
 
     /**

@@ -36,8 +36,13 @@ class HttpUri implements Uri {
      * @param $uri
      *      A uri or uri builder
      */
-    public function __construct(Uri $uri) {
-        $this->uri = $uri;
+    public function __construct(Uri $uri = NULL) {
+        if ($uri == NULL) {
+            $this->uri = new HttpUriBuilder();
+
+        } else {
+            $this->uri = $uri;
+        }
     }
 
     /**

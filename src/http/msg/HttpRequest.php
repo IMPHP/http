@@ -28,7 +28,7 @@ use im\util\IndexArray;
  * An implementation of `im\http\msg\Request`
  *
  * This abstraction is used to provide read-only access to a
- * request builder in order to comply with the `Request` interface. 
+ * request builder in order to comply with the `Request` interface.
  */
 class HttpRequest extends HttpMessage implements Request {
 
@@ -36,8 +36,13 @@ class HttpRequest extends HttpMessage implements Request {
      * @param $request
      *      A request or request builder
      */
-    public function __construct(Request $request) {
-        parent::__construct($request);
+    public function __construct(Request $request = NULL) {
+        if ($request == NULL) {
+            parent::__construct(new HttpRequestBuilder());
+
+        } else {
+            parent::__construct($request);
+        }
     }
 
     /**
