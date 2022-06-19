@@ -1,4 +1,4 @@
-# [HTTP Message](http.md) / HttpResponse
+# [HTTP Base](http-base.md) / [HTTP Message](http.md) / HttpResponse
  > im\http\msg\HttpResponse
 ____
 
@@ -7,6 +7,9 @@ An implementation of `im\http\msg\Response`
 
 This abstraction is used to provide read-only access to a
 response builder in order to comply with the `Response` interface.
+
+> :warning: **Deprecated**  
+> This has been replaced by `im\http2\Response`  
 
 ## Synopsis
 ```php
@@ -133,7 +136,7 @@ class HttpResponse extends im\http\msg\HttpMessage implements im\http\msg\Messag
     public string REASON_511 = 'Network Authentication Required'
 
     // Methods
-    public __construct(im\http\msg\Response $response)
+    public __construct(null|im\http\msg\Response $response = NULL)
     public getStatusCode(): int
     public getStatusReason(): string
     public toString(): string

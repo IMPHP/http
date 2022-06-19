@@ -11,5 +11,5 @@ form as if this was sent to the client
 
 ## Synopsis
 ```php
-abstract public toString(): string
+public toString(): string
 ```

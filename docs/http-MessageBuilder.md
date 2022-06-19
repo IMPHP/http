@@ -1,9 +1,12 @@
-# [HTTP Message](http.md) / MessageBuilder
+# [HTTP Base](http-base.md) / [HTTP Message](http.md) / MessageBuilder
  > im\http\msg\MessageBuilder
 ____
 
 ## Description
 Defines a message builder for the http message specification
+
+> :warning: **Deprecated**  
+> This has been replaced by `im\http2\msg\Message`  
 
 ## Synopsis
 ```php

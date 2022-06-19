@@ -28,5 +28,5 @@ echo $msg->getHeaderLine("Content-Type");
 ```
 
 ```
-Output: text/html; utf-8
+Output: text/html, utf-8
 ```

@@ -1,9 +1,12 @@
-# [HTTP Message](http.md) / Message
+# [HTTP Base](http-base.md) / [HTTP Message](http.md) / Message
  > im\http\msg\Message
 ____
 
 ## Description
 Defines a message object for the http message specification
+
+> :warning: **Deprecated**  
+> This has been replaced by `im\http2\msg\Message`  
 
  > This interface extends IteratorAggregate to allow iterating through all the available headers within this message.  
 

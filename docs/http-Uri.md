@@ -1,9 +1,12 @@
-# [HTTP Message](http.md) / Uri
+# [HTTP Base](http-base.md) / [HTTP Message](http.md) / Uri
  > im\http\msg\Uri
 ____
 
 ## Description
 Defines a Uri object for the http message specification
+
+> :warning: **Deprecated**  
+> This has been replaced by `im\http2\msg\Uri`  
 
 ## Synopsis
 ```php
@@ -13,6 +16,7 @@ interface Uri {
     getFragment(): null|string
     getQueryKey(string $name): null|string
     getQuery(): null|string
+    getBaseUrl(): null|string
     getBasePath(): null|string
     getPath(): string
     getFullPath(): string
@@ -34,6 +38,7 @@ interface Uri {
 | [__Uri&nbsp;::&nbsp;getFragment__](http-Uri-getFragment.md) | Get the fragment |
 | [__Uri&nbsp;::&nbsp;getQueryKey__](http-Uri-getQueryKey.md) | Get a key part of the querystring |
 | [__Uri&nbsp;::&nbsp;getQuery__](http-Uri-getQuery.md) | Get the querystring |
+| [__Uri&nbsp;::&nbsp;getBaseUrl__](http-Uri-getBaseUrl.md) | Get the base url for the request  The base url is everything prepending the path, like scheme, domain, base path etc |
 | [__Uri&nbsp;::&nbsp;getBasePath__](http-Uri-getBasePath.md) | Get the base path for the request  Base path is the part of the path that is not part of the actual request and should not be dealed with by a router and such |
 | [__Uri&nbsp;::&nbsp;getPath__](http-Uri-getPath.md) | Get the request path |
 | [__Uri&nbsp;::&nbsp;getFullPath__](http-Uri-getFullPath.md) | Get the full request path |

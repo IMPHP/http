@@ -1,10 +1,13 @@
-# [HTTP Message](http.md) / File
+# [HTTP Base](http-base.md) / [HTTP Message](http.md) / File
  > im\http\msg\File
 ____
 
 ## Description
 Defines a file that can be attached to a request.
 These files are typically used for uploaded files.
+
+> :warning: **Deprecated**  
+> This has been replaced by `im\http2\msg\File`  
 
 ## Synopsis
 ```php

@@ -1,9 +1,12 @@
-# [HTTP Message](http.md) / HttpMessageBuilder
+# [HTTP Base](http-base.md) / [HTTP Message](http.md) / HttpMessageBuilder
  > im\http\msg\HttpMessageBuilder
 ____
 
 ## Description
 This is an implementation of the `im\http\msg\MessageBuilder` interface
+
+> :warning: **Deprecated**  
+> This has been replaced by `im\http2\msg\BaseMessage`  
 
 ## Synopsis
 ```php
@@ -22,11 +25,11 @@ abstract class HttpMessageBuilder implements im\http\msg\MessageBuilder, Stringa
     public setProtocolVersion(string $version): void
     public getBody(): im\io\Stream
     public getBuilder(): im\http\msg\MessageBuilder
+    public toString(): string
 
     // Inherited Methods
     abstract public getFinal(): im\http\msg\Message
     abstract public setBody(Stream $body): void
-    abstract public toString(): string
 }
 ```
 
@@ -45,6 +48,6 @@ abstract class HttpMessageBuilder implements im\http\msg\MessageBuilder, Stringa
 | [__HttpMessageBuilder&nbsp;::&nbsp;setProtocolVersion__](http-HttpMessageBuilder-setProtocolVersion.md) | Set a different protocol version like `1 |
 | [__HttpMessageBuilder&nbsp;::&nbsp;getBody__](http-HttpMessageBuilder-getBody.md) | Get the current body stream |
 | [__HttpMessageBuilder&nbsp;::&nbsp;getBuilder__](http-HttpMessageBuilder-getBuilder.md) | Get a message builder for the current message |
+| [__HttpMessageBuilder&nbsp;::&nbsp;toString__](http-HttpMessageBuilder-toString.md) | Get a string of the request  This is a text representation of the message |
 | [__HttpMessageBuilder&nbsp;::&nbsp;getFinal__](http-HttpMessageBuilder-getFinal.md) | Get a read-only message object |
 | [__HttpMessageBuilder&nbsp;::&nbsp;setBody__](http-HttpMessageBuilder-setBody.md) | Set a new body stream |
-| [__HttpMessageBuilder&nbsp;::&nbsp;toString__](http-HttpMessageBuilder-toString.md) | Get a string of the request  This is a text representation of the message |

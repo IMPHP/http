@@ -1,9 +1,12 @@
-# [HTTP Message](http.md) / Response
+# [HTTP Base](http-base.md) / [HTTP Message](http.md) / Response
  > im\http\msg\Response
 ____
 
 ## Description
 Defines a Response object for the http message specification
+
+> :warning: **Deprecated**  
+> This has been replaced by `im\http2\msg\Response`  
 
 ## Synopsis
 ```php

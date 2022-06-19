@@ -4,7 +4,7 @@ ____
 
 ## Synopsis
 ```php
-public __construct(im\http\msg\Uri $uri)
+public __construct(null|im\http\msg\Uri $uri = NULL)
 ```
 
 ## Parameters

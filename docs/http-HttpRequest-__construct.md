@@ -4,7 +4,7 @@ ____
 
 ## Synopsis
 ```php
-public __construct(im\http\msg\Request $request)
+public __construct(null|im\http\msg\Request $request = NULL)
 ```
 
 ## Parameters

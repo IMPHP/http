@@ -1,4 +1,4 @@
-# [HTTP Message](http.md) / Request
+# [HTTP Base](http-base.md) / [HTTP Message](http.md) / Request
  > im\http\msg\Request
 ____
 
@@ -35,6 +35,9 @@ cookies, query and body params mirror their original source. If you
 update one of these sources, the params must follow. For example
 if you switch the Uri object, the query params must be updated to mirror
 the new query string in the Uri.
+
+> :warning: **Deprecated**  
+> This has been replaced by `im\http2\msg\Request`  
 
 ## Synopsis
 ```php

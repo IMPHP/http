@@ -1,4 +1,4 @@
-# [HTTP Message](http.md) / HttpFile
+# [HTTP Base](http-base.md) / [HTTP Message](http.md) / HttpFile
  > im\http\msg\HttpFile
 ____
 
@@ -7,6 +7,9 @@ This class is used mostly for uploaded files.
 
 It can however be used for any type of file or even `Stream` objects,
 though it does not really make much sense outside the usage of the Http package.
+
+> :warning: **Deprecated**  
+> This has been replaced by `im\http2\File`  
 
 ## Synopsis
 ```php

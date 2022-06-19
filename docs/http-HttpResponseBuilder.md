@@ -1,9 +1,12 @@
-# [HTTP Message](http.md) / HttpResponseBuilder
+# [HTTP Base](http-base.md) / [HTTP Message](http.md) / HttpResponseBuilder
  > im\http\msg\HttpResponseBuilder
 ____
 
 ## Description
 An implementation of `im\http\msg\ResponseBuilder`
+
+> :warning: **Deprecated**  
+> This has been replaced by `im\http2\Response`  
 
 ## Synopsis
 ```php

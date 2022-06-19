@@ -1,9 +1,12 @@
-# [HTTP Message](http.md) / HttpRequestBuilder
+# [HTTP Base](http-base.md) / [HTTP Message](http.md) / HttpRequestBuilder
  > im\http\msg\HttpRequestBuilder
 ____
 
 ## Description
 An implementation of `im\http\msg\RequestBuilder`
+
+> :warning: **Deprecated**  
+> This has been replaced by `im\http2\Request`  
 
 ## Synopsis
 ```php

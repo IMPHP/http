@@ -1,9 +1,12 @@
-# [HTTP Message](http.md) / HttpMessage
+# [HTTP Base](http-base.md) / [HTTP Message](http.md) / HttpMessage
  > im\http\msg\HttpMessage
 ____
 
 ## Description
 This is an implementation of the `im\http\msg\Message` interface
+
+> :warning: **Deprecated**  
+> This has been replaced by `im\http2\msg\BaseMessage`  
 
 ## Synopsis
 ```php

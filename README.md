@@ -12,7 +12,7 @@ PSR7 is designed to work with older PHP versions. As such it does not utilize PH
 
 ### Full Documentation
 
-You can view the [Full Documentation](docs/http.md) to lean more about what this offers.
+You can view the [Full Documentation](docs/http-base.md) to lean more about what this offers.
 
 ### Installation
 

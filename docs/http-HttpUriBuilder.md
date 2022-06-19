@@ -1,9 +1,12 @@
-# [HTTP Message](http.md) / HttpUriBuilder
+# [HTTP Base](http-base.md) / [HTTP Message](http.md) / HttpUriBuilder
  > im\http\msg\HttpUriBuilder
 ____
 
 ## Description
 An implementation of `im\http\msg\UriBuilder`
+
+> :warning: **Deprecated**  
+> This has been replaced by `im\http2\Uri`  
 
 ## Synopsis
 ```php
@@ -17,6 +20,7 @@ class HttpUriBuilder implements im\http\msg\UriBuilder, Stringable, im\http\msg\
     public setQueryKey(string $name, null|string $value): void
     public getQuery(): null|string
     public setQuery(null|string $query): void
+    public getBaseUrl(): null|string
     public getBasePath(): null|string
     public setBasePath(null|string $basePath): void
     public getPath(): string
@@ -50,6 +54,7 @@ class HttpUriBuilder implements im\http\msg\UriBuilder, Stringable, im\http\msg\
 | [__HttpUriBuilder&nbsp;::&nbsp;setQueryKey__](http-HttpUriBuilder-setQueryKey.md) | Set a querystring key part |
 | [__HttpUriBuilder&nbsp;::&nbsp;getQuery__](http-HttpUriBuilder-getQuery.md) | Get the querystring |
 | [__HttpUriBuilder&nbsp;::&nbsp;setQuery__](http-HttpUriBuilder-setQuery.md) | Set the querystring |
+| [__HttpUriBuilder&nbsp;::&nbsp;getBaseUrl__](http-HttpUriBuilder-getBaseUrl.md) | Get the base url for the request  The base url is everything prepending the path, like scheme, domain, base path etc |
 | [__HttpUriBuilder&nbsp;::&nbsp;getBasePath__](http-HttpUriBuilder-getBasePath.md) | Get the base path for the request  Base path is the part of the path that is not part of the actual request and should not be dealed with by a router and such |
 | [__HttpUriBuilder&nbsp;::&nbsp;setBasePath__](http-HttpUriBuilder-setBasePath.md) | Set the request base path |
 | [__HttpUriBuilder&nbsp;::&nbsp;getPath__](http-HttpUriBuilder-getPath.md) | Get the request path |

@@ -1,4 +1,4 @@
-# [HTTP Message](http.md) / ServerRequestBuilder
+# [HTTP Base](http-base.md) / [HTTP Message](http.md) / ServerRequestBuilder
  > im\http\msg\ServerRequestBuilder
 ____
 
@@ -7,6 +7,9 @@ An implementation of `im\http\msg\RequestBuilder`
 
 This builder will be initiated an populated with data from
 PHP's superglobals. This includes URI, Host, Uploaded files and more.
+
+> :warning: **Deprecated**  
+> This has been replaced by `im\http2\ServerRequest`  
 
 ## Synopsis
 ```php

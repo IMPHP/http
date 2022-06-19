@@ -1,4 +1,4 @@
-# [HTTP Message](http.md) / HttpRequest
+# [HTTP Base](http-base.md) / [HTTP Message](http.md) / HttpRequest
  > im\http\msg\HttpRequest
 ____
 
@@ -7,6 +7,9 @@ An implementation of `im\http\msg\Request`
 
 This abstraction is used to provide read-only access to a
 request builder in order to comply with the `Request` interface.
+
+> :warning: **Deprecated**  
+> This has been replaced by `im\http2\Request`  
 
 ## Synopsis
 ```php
@@ -19,7 +22,7 @@ class HttpRequest extends im\http\msg\HttpMessage implements im\http\msg\Message
     public string P_ATTR = 'attributes'
 
     // Methods
-    public __construct(im\http\msg\Request $request)
+    public __construct(null|im\http\msg\Request $request = NULL)
     public getMethod(): string
     public getUri(): im\http\msg\Uri
     public getRequestTarget(): string
