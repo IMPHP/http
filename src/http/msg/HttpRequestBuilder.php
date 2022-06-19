@@ -32,6 +32,9 @@ use Exception;
 
 /**
  * An implementation of `im\http\msg\RequestBuilder`
+ * 
+ * @deprecated 
+ *      This has been replaced by `im\http2\Request`
  */
 class HttpRequestBuilder extends HttpMessageBuilder implements RequestBuilder {
 

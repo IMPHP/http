@@ -25,6 +25,9 @@ use im\io\Stream;
 
 /**
  * Defines a message builder for the http message specification
+ * 
+ * @deprecated 
+ *      This has been replaced by `im\http2\msg\Message`
  */
 interface MessageBuilder extends Message {
 

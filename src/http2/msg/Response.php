@@ -19,13 +19,24 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-namespace im\http\msg;
+namespace im\http2\msg;
 
 /**
  * Defines a Response object for the http message specification
- * 
- * @deprecated 
- *      This has been replaced by `im\http2\msg\Response`
+ *
+ * @example
+ *      Download a file from the server
+ *
+ *      ```php
+ *      $response = ...;
+ *      $response->setHeader("Content-Type", "application/octet-stream; charset=" . mime_content_type($file));
+ *      $response->setHeader("Content-Disposition", "attachment; filename={$filename}");
+ *      $response->setHeader("Content-Length", $filesize);
+ *      $response->setStream(new FileStream($file));
+ *
+ *      // Send content to the client
+ *      $response->print();
+ *      ```
  */
 interface Response extends Message {
 
@@ -404,4 +415,15 @@ interface Response extends Message {
      * Return the current status reason phrase
      */
     function getStatusReason(): string;
+
+    /**
+     * Set a new status code and optional reason phrase
+     *
+     * @param $code
+     *      A response code
+     *
+     * @param $reasonPhrase
+     *      An optional response phrase
+     */
+    function setStatus(int $code, string|null $reasonPhrase = null): void;
 }

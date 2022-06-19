@@ -19,31 +19,47 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-namespace im\http\msg;
+namespace im\http2;
 
+use im\http2\msg\ContentParser;
+use im\io\Stream;
 use im\Shift;
 
 /**
- * An implementation of `im\http\msg\RequestBuilder`
- *
- * This builder will be initiated an populated with data from
- * PHP's superglobals. This includes URI, Host, Uploaded files and more.
+ * An implementation of `im\http2\msg\Request`
  * 
- * @deprecated 
- *      This has been replaced by `im\http2\ServerRequest`
+ * This implementation will be initiated an populated with data from
+ * PHP's superglobals. This includes URI, Host, Uploaded files and more.
  */
-class ServerRequestBuilder extends HttpRequestBuilder {
+class ServerRequest extends Request {
 
     /**
-     * @param $parser
-     *      Optional parser used to parse the content of the body
+     *
      */
-    public function __construct(StreamParser $parser = null) {
-        parent::__construct("GET", ($uri = new HttpUriBuilder()), $parser);
+    public function __construct() {
+        parent::__construct("GET", ($uri = new Uri()));
+
+        $supers = [
+            "srvName" => "SERVER_NAME",
+            "srvHost" => "HTTP_HOST",
+            "reqMethod" => "REQUEST_METHOD",
+            "reqSSL" => "HTTPS",
+            "reqURI" => "REQUEST_URI",
+            "reqPort" => "SERVER_PORT",
+            "reqScript" => "SCRIPT_NAME",
+            "reqOrigURL" => "HTTP_X_ORIGINAL_URL",
+            "reqRewrite" => "HTTP_X_REWRITE_URL",
+            "reqQS" => "QUERY_STRING"
+        ];
+
+        foreach ($supers as $var => $super) {
+            ${$var} = !empty($_SERVER[$super]) ? $_SERVER[$super] : null;
+        }
 
         /* ------------------------------------------------
          * Get all headers
          */
+
         if (function_exists("getallheaders")) {
             foreach (getallheaders() as $key => $value) {
                 $this->addHeader($key, $value);
@@ -51,7 +67,7 @@ class ServerRequestBuilder extends HttpRequestBuilder {
 
         } else {
             foreach ($_SERVER as $key => $value) {
-                if (str_starts_with(strtolower($key), "http_")) {
+                if (str_starts_with($key, "HTTP_")) {
                     $this->setHeader(substr(str_replace("_", "-", $key), 5), $value);
                 }
             }
@@ -60,92 +76,72 @@ class ServerRequestBuilder extends HttpRequestBuilder {
         /* ------------------------------------------------
          * Get the request Method
          */
+
         if ($this->hasHeader("x-http-method-override")) {
             $this->setMethod(
                 $this->getHeader("x-http-method-override")->get(0)
             );
 
-        } else if (!empty($_SERVER['REQUEST_METHOD'])) {
-            $this->setMethod(
-                $_SERVER['REQUEST_METHOD']
-            );
+        } else if ($reqMethod != null) {
+            $this->setMethod($reqMethod);
         }
 
         /* ------------------------------------------------
          * Get uri information
          */
-        $authority = $_SERVER["HTTP_HOST"] ?? $_SERVER["SERVER_NAME"] ?? "localhost";
-        $scheme = Shift::toBoolean($_SERVER["HTTPS"] ?? "off") ? "https" : "http";
-        $path = "/".trim($_SERVER["REQUEST_URI"] ?? "", "/");
-        $basePath = null;
-        $query = null;
 
-        if (!empty($_SERVER["SERVER_PORT"])) {
-            $authority .= ":".$_SERVER["SERVER_PORT"];
+        $uriAuth = $srvHost ?? $srvName ?? "localhost";
+        $uriScheme = Shift::toBoolean($reqSSL ?? "off") ? "https" : "http";
+        $uriPath = $reqURI ?? "";
+        $uriQS = null;
+
+        if ($reqPort != null) {
+            $uriAuth .= ":{$reqPort}";
+        }
+
+        if (($pos = strpos($uriPath, "?")) !== false) {
+            $uriQS = substr($uriPath, $pos+1);
+            $uriPath = substr($uriPath, 0, $pos);
         }
 
         if ($this->hasHeader("authorization")) {
             $userinfo = $this->getHeader("authorization")->get(0);
 
             if (strtolower(substr($userinfo, 0, 5)) == "basic") {
-                $authority = base64_decode(substr($userinfo, 6))."@".$authority;
+                $uriAuth = base64_decode(substr($userinfo, 6))."@".$uriAuth;
             }
         }
 
-        if (($pos = strpos($path, "?")) !== false) {
-            $path = "/".trim(substr($path, 0, $pos), "/");
+        # IIS Fixes
+        if ($reqOrigURL != null) {
+            # IIS Mod-Rewrite
+            $uriQS = preg_replace('/^.+\\?/', '', $reqOrigURL);
+
+        } else if ($reqRewrite != null) {
+            # IIS Isapi_Rewrite
+            $uriQS = preg_replace('/^.+\\?/', '', $reqRewrite);
+
+        } else if ($reqQS != null) {
+            $uriQS = $reqQS;
         }
 
-        if (!empty($_SERVER["SCRIPT_NAME"])) {
-            $basePath = dirname($_SERVER["SCRIPT_NAME"]);
-            $path = "/".trim(substr($path, strlen($basePath)), "/");
+        $uri->setAuthority($uriAuth);
+        $uri->setScheme($uriScheme);
+        $uri->setPath($uriPath);
 
-            if (!empty($path) && preg_match("/^(\/\w+\.php)(\/.*)?/", $path, $match)) {
-                $basePath = str_replace("//", "/", $basePath.$match[1]);
-                $path = !empty($match[2]) ? $match[2] : "/";
-            }
+        if ($uriQS != null) {
+            $uri->setQuerystring($uriQS);
         }
-
-        // IIS Fixes
-        if (!empty($_SERVER["HTTP_X_ORIGINAL_URL"])) {
-            // IIS Mod-Rewrite
-            $query = preg_replace('/^.+\\?/', '', $_SERVER["HTTP_X_ORIGINAL_URL"]);
-
-        } else if (!empty($_SERVER["HTTP_X_REWRITE_URL"])) {
-            // IIS Isapi_Rewrite
-            $query = preg_replace('/^.+\\?/', '', $_SERVER["HTTP_X_REWRITE_URL"]);
-
-        } else if (isset($_SERVER["QUERY_STRING"]) || isset($_SERVER["REQUEST_URI"])) {
-            if (!empty($_SERVER["QUERY_STRING"])) {
-                $query = $_SERVER["QUERY_STRING"];
-
-            } else if (($pos = strpos($_SERVER["REQUEST_URI"], "?")) !== false) {
-                $query = substr($_SERVER["REQUEST_URI"], $pos+1);
-            }
-        }
-
-        $uri->setAuthority($authority);
-        $uri->setScheme($scheme);
-        $uri->setPath($path);
-
-        if ($basePath != null) {
-            $uri->setBasePath($basePath);
-        }
-
-        if ($query != null) {
-            $uri->setQuery($query);
-        }
-
-        $this->setUri($uri);
 
         /* ------------------------------------------------
          * Get uploaded files
          */
+
         if (!empty($_FILES)) {
             foreach ($_FILES as $fieldName => $fileInfo) {
                 if (is_array($fileInfo["tmp_name"])) {
                     foreach ($fileInfo["tmp_name"] as $pos => $ignore) {
-                        $this->addFile(new HttpFile(
+                        $this->addFile(new File(
                             $fieldName,
                             $fileInfo["tmp_name"][$pos],
                             $fileInfo["size"][$pos],
@@ -156,7 +152,7 @@ class ServerRequestBuilder extends HttpRequestBuilder {
                     }
 
                 } else {
-                    $this->addFile(new HttpFile(
+                    $this->addFile(new File(
                         $fieldName,
                         $fileInfo["tmp_name"],
                         $fileInfo["size"],
@@ -175,14 +171,29 @@ class ServerRequestBuilder extends HttpRequestBuilder {
         if ($this->hasHeader("content-type")) {
             $type = $this->getHeaderLine("content-type");
 
-            if (($pos = strpos($type, ";")) !== false
-                        || ($pos = strpos($type, ",")) !== false) {
-
+            if (($pos = strpos($type, ";")) !== false) {
                 $type = substr($type, $pos);
             }
 
-            if ($this->getMethod() == "POST" && in_array($type, ["multipart/form-data", "application/x-www-form-urlencoded"])) {
-                $this->parsedBody = $_POST;
+            if (in_array($this->getMethod(), ["POST", "PUT"])
+                    && in_array(strtolower($type), ["multipart/form-data", "application/x-www-form-urlencoded"])) {
+
+                $parser = new class() implements ContentParser {
+                    public function parse(Stream $stream, string $contentType): mixed {
+                        return $_POST;
+                    }
+                };
+
+                $this->setParser($parser, $type);
+
+            } else if (strtolower($type) == "application/json") {
+                $parser = new class() implements ContentParser {
+                    public function parse(Stream $stream, string $contentType): mixed {
+                        return json_decode($stream->toString(), false);
+                    }
+                };
+
+                $this->setParser($parser, $type);
             }
         }
     }

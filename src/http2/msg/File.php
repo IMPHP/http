@@ -19,16 +19,13 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-namespace im\http\msg;
+namespace im\http2\msg;
 
 use im\io\Stream;
 
 /**
  * Defines a file that can be attached to a request.
  * These files are typically used for uploaded files.
- * 
- * @deprecated 
- *      This has been replaced by `im\http2\msg\File`
  */
 interface File {
 

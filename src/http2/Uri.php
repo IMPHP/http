@@ -19,18 +19,18 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-namespace im\http\msg;
+namespace im\http2;
 
-use im\util\StringBuilder;
 use Exception;
+use im\http2\msg\Uri as IUri;
+use im\util\MutableMappedArray;
+use im\util\Map;
+use im\util\StringBuilder;
 
 /**
- * An implementation of `im\http\msg\UriBuilder`
- * 
- * @deprecated 
- *      This has been replaced by `im\http2\Uri`
+ * An implementation of `im\http2\msg\Uri`
  */
-class HttpUriBuilder implements UriBuilder {
+class Uri implements IUri {
 
     /** @internal */
     protected ?string $scheme = null;
@@ -45,16 +45,13 @@ class HttpUriBuilder implements UriBuilder {
     protected ?string $host = null;
 
     /** @internal */
-    protected string $path = "/";
-
-    /** @internal */
-    protected ?string $basePath = null;
+    protected ?string $path = null;
 
     /** @internal */
     protected ?string $fragment = null;
 
     /** @internal */
-    protected array $query = [];
+    protected MutableMappedArray $query;
 
     /** @internal */
     protected int $port = 0;
@@ -65,10 +62,12 @@ class HttpUriBuilder implements UriBuilder {
      *
      * @example
      *      ```php
-     *      new HttpUriBuilder("https://user:passwd@domain.com/path");
+     *      new Uri("https://user:passwd@domain.com/path");
      *      ```
      */
     public function __construct(string $url = null) {
+        $this->query = new Map();
+
         if ($url != null) {
             $url = parse_url($url);
 
@@ -80,8 +79,8 @@ class HttpUriBuilder implements UriBuilder {
             $this->setUserInfo( $url["user"] ?? null, $url["pass"] ?? null );
             $this->setHost( $url["host"] ?? null );
             $this->setPort( $url["port"] ?? 0 );
-            $this->setPath( $url["path"] ?? "/" );
-            $this->setQuery( $url["query"] ?? null );
+            $this->setPath( $url["path"] ?? null );
+            $this->setQuerystring( $url["query"] ?? null );
             $this->setFragment( $url["fragment"] ?? null );
         }
     }
@@ -89,55 +88,10 @@ class HttpUriBuilder implements UriBuilder {
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\UriBuilder")]
+    #[Override("im\http2\msg\Uri")]
     function getFragment(): ?string {
-        return $this->fragment;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\UriBuilder")]
-    function setFragment(?string $fragment): void {
-        if ($fragment != null) {
-            $fragment = parse_url("scheme://domain/#$fragment", \PHP_URL_FRAGMENT);
-
-            if (!is_string($fragment)) {
-                throw new Exception("Invalid fragment format");
-            }
-        }
-
-        $this->fragment = $fragment;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\UriBuilder")]
-    public function getQueryKey(string $name): ?string {
-        return $this->query[$name] ?? null;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\UriBuilder")]
-    public function setQueryKey(string $name, ?string $value): void {
-        if ($value != null) {
-            $this->query[$name] = $value;
-
-        } else if (array_key_exists($name, $this->query)) {
-            unset($this->query[$name]);
-        }
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\UriBuilder")]
-    public function getQuery(): ?string {
-        if (!empty($this->query)) {
-            return http_build_query($this->query);
+        if (!empty($this->fragment)) {
+            return rawurlencode($this->fragment);
         }
 
         return null;
@@ -146,9 +100,62 @@ class HttpUriBuilder implements UriBuilder {
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\UriBuilder")]
-    public function setQuery(?string $query): void {
-        if ($query != null) {
+    #[Override("im\http2\msg\Uri")]
+    function setFragment(string|null $fragment): void {
+        if ($fragment != null) {
+            $fragment = parse_url("scheme://domain/#$fragment", \PHP_URL_FRAGMENT);
+
+            if (!is_string($fragment)) {
+                throw new Exception("Invalid fragment format");
+            }
+
+            $fragment = rawurldecode($fragment);
+        }
+
+        $this->fragment = $fragment;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Uri")]
+    public function getQuery(string $name): ?string {
+        return $this->query->get($name);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Uri")]
+    public function setQuery(string $name, string|null $value): void {
+        if ($value !== null) {
+            $this->query->set($name, $value);
+
+        } else {
+            $this->query->unset($name);
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Uri")]
+    public function getQuerystring(): ?string {
+        if ($this->query->length() > 0) {
+            return http_build_query($this->query->toArray());
+        }
+
+        return null;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Uri")]
+    public function setQuerystring(string|null $query): void {
+        $this->query->clear();
+
+        if ($query !== null) {
             $query = parse_url("scheme://domain/?$query", \PHP_URL_QUERY);
 
             if (!is_string($query)) {
@@ -158,110 +165,45 @@ class HttpUriBuilder implements UriBuilder {
             parse_str($query, $result);
 
             if (is_array($result)) {
-                $this->query = $result;
+                $this->query->addIterable($result);
 
             } else {
                 throw new Exception("Invalid query format");
             }
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Uri")]
+    public function getPath(): ?string {
+        return $this->path;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Uri")]
+    public function setPath(string|null $path): void {
+        if ($path === null) {
+            $this->path = null;
 
         } else {
-            $this->query = [];
-        }
-    }
+            $path = parse_url($path, \PHP_URL_PATH);
 
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\UriBuilder")]
-    function getBaseUrl(): ?string {
-        $str = new StringBuilder();
-
-        if (($scheme = $this->getScheme()) != null) {
-            $str->append($scheme, "://");
-        }
-
-        if (($authority = $this->getAuthority()) != null) {
-            $str->append($authority);
-        }
-
-        if (($basePath = $this->getBasePath()) != null) {
-            $str->append( $authority != null ? $basePath : ltrim($basePath, "/") );
-        }
-
-        return $str->length() > 0 ? $str->toString() : null;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\UriBuilder")]
-    public function getBasePath(): ?string {
-        if ($this->basePath != null) {
-            return "/" . trim($this->basePath, "/");
-        }
-
-        return null;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\UriBuilder")]
-    public function setBasePath(?string $basePath): void {
-        if ($basePath != null) {
-            $basePath = parse_url("scheme://domain/" . ltrim($basePath, "/"), \PHP_URL_PATH);
-
-            if (!is_string($basePath)) {
+            if (!is_string($path)) {
                 throw new Exception("Invalid path format");
             }
 
-            $this->basePath = $this->parsePath($basePath);
+            $this->path = implode("/", array_map("rawurlencode", explode("/", rawurldecode($path))));
         }
-
-        $this->$basePath = $basePath;
     }
 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\UriBuilder")]
-    public function getPath(): string {
-        return "/" . trim($this->path, "/");
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\UriBuilder")]
-    public function setPath(string $path): void {
-        $path = parse_url("scheme://domain/" . ltrim($path, "/"), \PHP_URL_PATH);
-
-        if (!is_string($path)) {
-            throw new Exception("Invalid path format");
-        }
-
-        $this->path = $this->parsePath($path);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\UriBuilder")]
-    public function getFullPath(): string {
-        $path = $this->getPath();
-        $bpath = $this->getBasePath();
-
-        if ($bpath != null) {
-            $path = "/" . trim(str_replace("//", "/", "{$bpath}/{$path}"), "/");
-        }
-
-        return $path;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\UriBuilder")]
+    #[Override("im\http2\msg\Uri")]
     public function getPort(): int {
         if ($this->port == 0
                 && ($scheme = $this->getScheme()) != null) {
@@ -280,7 +222,7 @@ class HttpUriBuilder implements UriBuilder {
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\UriBuilder")]
+    #[Override("im\http2\msg\Uri")]
     public function setPort(int $port): void {
         if ($port != 0) {
             $port = parse_url("scheme://domain:$port", \PHP_URL_PORT);
@@ -296,7 +238,7 @@ class HttpUriBuilder implements UriBuilder {
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\UriBuilder")]
+    #[Override("im\http2\msg\Uri")]
     public function getHost(): ?string {
         return $this->host;
     }
@@ -304,23 +246,25 @@ class HttpUriBuilder implements UriBuilder {
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\UriBuilder")]
-    public function setHost(?string $host): void {
+    #[Override("im\http2\msg\Uri")]
+    public function setHost(string|null $host): void {
         if ($host != null) {
             $host = parse_url("scheme://$host", \PHP_URL_HOST);
 
             if (!is_string($host)) {
                 throw new Exception("Invalid host format");
             }
+
+            $host = strtolower($host);
         }
 
-        $this->host = strtolower($host);
+        $this->host = $host;
     }
 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\UriBuilder")]
+    #[Override("im\http2\msg\Uri")]
     public function isDefaultPort(): bool {
         $port = $this->getPort();
         $scheme = $this->getScheme();
@@ -333,7 +277,7 @@ class HttpUriBuilder implements UriBuilder {
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\UriBuilder")]
+    #[Override("im\http2\msg\Uri")]
     public function getAuthority(): ?string {
         $str = new StringBuilder();
 
@@ -365,23 +309,30 @@ class HttpUriBuilder implements UriBuilder {
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\UriBuilder")]
-    public function setAuthority(?string $auth): void {
-        $auth = parse_url("scheme://$auth");
+    #[Override("im\http2\msg\Uri")]
+    public function setAuthority(string|null $auth): void {
+        if ($auth !== null) {
+            $auth = parse_url("scheme://$auth");
 
-        if (!is_array($auth)) {
-             throw new Exception("Invalid authority format");
+            if (!is_array($auth)) {
+                 throw new Exception("Invalid authority format");
+            }
+
+            $this->setHost($auth["host"] ?? null);
+            $this->setPort($auth["port"] ?? 0);
+            $this->setUserInfo($auth["user"] ?? null, $auth["pass"] ?? null);
+
+        } else {
+            $this->setHost(null);
+            $this->setPort(0);
+            $this->setUserInfo(null);
         }
-
-        $this->setHost($auth["host"] ?? null);
-        $this->setPort($auth["port"] ?? 0);
-        $this->setUserInfo($auth["user"] ?? null, $auth["pass"] ?? null);
     }
 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\UriBuilder")]
+    #[Override("im\http2\msg\Uri")]
     public function getUser(): ?string {
         return $this->user;
     }
@@ -389,7 +340,7 @@ class HttpUriBuilder implements UriBuilder {
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\UriBuilder")]
+    #[Override("im\http2\msg\Uri")]
     public function getPassword(): ?string {
         return $this->passwd;
     }
@@ -397,8 +348,8 @@ class HttpUriBuilder implements UriBuilder {
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\UriBuilder")]
-    public function setUserInfo(?string $user, string $password = null): void {
+    #[Override("im\http2\msg\Uri")]
+    public function setUserInfo(string|null $user, string|null $password = null): void {
         if ($user != null) {
             $user = parse_url("scheme://$user:psw@domain", \PHP_URL_USER);
 
@@ -425,7 +376,7 @@ class HttpUriBuilder implements UriBuilder {
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\UriBuilder")]
+    #[Override("im\http2\msg\Uri")]
     public function getScheme(): ?string {
         return $this->scheme;
     }
@@ -433,54 +384,49 @@ class HttpUriBuilder implements UriBuilder {
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\UriBuilder")]
-    public function setScheme(?string $scheme): void {
+    #[Override("im\http2\msg\Uri")]
+    public function setScheme(string|null $scheme): void {
         if ($scheme != null) {
             $scheme = parse_url("$scheme://domain", \PHP_URL_SCHEME);
 
             if (!is_string($scheme)) {
                 throw new Exception("Invalid scheme format");
             }
+
+            $scheme = strtolower($scheme);
         }
 
-        $this->scheme = strtolower($scheme);
+        $this->scheme = $scheme;
     }
 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\UriBuilder")]
-    public function getBuilder(): UriBuilder {
-        return clone $this;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\UriBuilder")]
-    public function getFinal(): Uri {
-        return new HttpUri($this);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\UriBuilder")]
+    #[Override("im\http2\msg\Uri")]
     public function toString(): string {
-        $path = $this->getFullPath();
         $str = new StringBuilder();
 
         if (($scheme = $this->getScheme()) != null) {
-            $str->append($scheme, "://");
+            $str->append($scheme, ":");
         }
 
         if (($authority = $this->getAuthority()) != null) {
-            $str->append($authority);
+            $str->append("//", $authority);
         }
 
-        $str->append( $authority != null ? $path : ltrim($path, "/") );
+        if (($path = $this->getPath()) != null) {
+            if ($path[0] != "/" && $authority != null) {
+                $str->append("/", $path);
 
-        if (($query = $this->getQuery()) != null) {
+            } else if (substr($path, 0, 2) == "//" && $authority == null) {
+                $str->append("/", ltrim($path, "/"));
+
+            } else {
+                $str->append($path);
+            }
+        }
+
+        if (($query = $this->getQuerystring()) != null) {
             $str->append("?", $query);
         }
 
@@ -499,9 +445,17 @@ class HttpUriBuilder implements UriBuilder {
     }
 
     /**
-     * @internal
+     * @inheritDoc
      */
-    protected function parsePath(string $path): string {
-        return str_replace(["\\", "//", "./"], "/", rawurldecode($path));
+    #[Override("im\http2\msg\Uri")]
+    public function clone(): static {
+        return clone $this;
+    }
+
+    /**
+     * @php
+     */
+    public function __clone() {
+        $this->query = $this->query->clone();
     }
 }

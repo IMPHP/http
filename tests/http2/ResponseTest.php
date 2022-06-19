@@ -2,7 +2,7 @@
 /*
  * This file is part of the IMPHP Project: https://github.com/IMPHP
  *
- * Copyright (c) 2016 Daniel Bergløv, License: MIT
+ * Copyright (c) 2018 Daniel Bergløv, License: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
  * and associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -18,35 +18,51 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+namespace im\test\http2;
 
-namespace im\http\msg;
-
-use im\io\Stream;
+use im\http2\msg\Message;
+use im\http2\Response;
 
 /**
- * Defines a parser that is used to parse the request body
  *
- * The request body can come in many forms like JSON,
- * XML, POST Data and more. This interface allows custom parsers to be used
- * to parse data within `im\http\msg\Request`.
- * 
- * @deprecated 
- *      This has been replaced by `im\http2\msg\ContentParser`
  */
-interface StreamParser {
+class ResponseTest extends MessageBase {
 
     /**
-     * Parse data from the body stream
      *
-     * @param $body
-     *      The stream to parse
-     *
-     * @param $mime
-     *      The mime type of the stream content
-     *
-     * @return
-     *      The parser should return `NULL` if it does not
-     *      support parsing the current content of the body.
      */
-    function parse(Stream $body, string $mime = null): mixed;
+    public function init(): Message {
+        return new Response(Response::STATUS_OK);
+    }
+
+    /**
+     *
+     */
+    public function test_basic(): void {
+        $response = $this->init();
+        $response->getStream()->write("Body");
+
+        $this->assertEquals(
+            "HTTP/1.1 200 OK\n\nContent-Type: text/html; charset=utf-8\n\nBody",
+            (string) $response
+        );
+    }
+
+    /**
+     *  
+     */
+    public function test_output(): void {
+        $response = $this->init();
+        $response->getStream()->write("Body");
+
+        ob_start();
+        $response->print();
+        $output = ob_get_contents();
+        ob_end_clean();
+
+        $this->assertEquals(
+            "HTTP/1.1 200 OK\n\nContent-Type: text/html; charset=utf-8\n\nBody",
+            $output
+        );
+    }
 }

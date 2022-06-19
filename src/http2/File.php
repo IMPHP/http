@@ -19,103 +19,71 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-namespace im\http\msg;
+namespace im\http2;
 
-use im\io\Stream;
-use im\io\RawStream;
-use im\io\FileStream;
-use im\ErrorCatcher;
 use Exception;
-use Throwable;
+use im\ErrorCatcher;
+use im\http2\msg\File as IFile;
+use im\io\Stream;
+use im\io\FileStream;
+use im\io\RawStream;
 
 /**
- * This class is used mostly for uploaded files.
- *
- * It can however be used for any type of file or even `Stream` objects,
- * though it does not really make much sense outside the usage of the Http package.
- * 
- * @deprecated 
- *      This has been replaced by `im\http2\File`
+ * An implementation of `im\http2\msg\File`
  */
-class HttpFile implements File {
+class File implements IFile {
 
     /**
      * @internal
      */
-    private string $mName;
+    protected string $name;
 
     /**
      * @internal
      */
-    private int $mError;
+    protected int $error;
 
     /**
      * @internal
      */
-    private int $mSize;
+    protected int $size;
 
     /**
      * @internal
      */
-    private ?string $mClientName;
+    protected ?string $clientName;
 
     /**
      * @internal
      */
-    private ?string $mClientType;
+    protected ?string $clientType;
 
     /**
      * @internal
      */
-    private ?string $mFile;
+    protected ?string $file;
 
     /**
      * @internal
      */
-    private ?Stream $mStream;
+    protected ?Stream $stream;
 
     /**
      * @internal
      */
-    private bool $mSaved = false;
+    protected bool $saved = false;
 
     /**
-     * @param $name
-     *      An identifying name
-     *
-     * @param $file
-     *      File accociated with this class.
-     *      This can be a file path or a `Stream`
-     *
-     * @param $length
-     *      Optional, specify the length of the file
-     *
-     * @param $error
-     *      Specify an error code accociated with the file.
-     *      This is used when using this class for uploaded files
-     *
-     * @param $clientName
-     *      The name of the original file that was uploaded.
-     *      When used for uploaded files
-     *
-     * @param $clientType
-     *      The media type reported by the client.
-     *      When used for uploaded files
+     * 
      */
-    public function __construct(string $name, string|Stream $file, int $length=-1, int $error=0, string $clientName=null, string $clientType=null) {
-        $this->mName = $name;
-        $this->mError = $error;
-        $this->mSize = $length;
-        $this->mClientName = $clientName;
-        $this->mClientType = $clientType;
-
+    public function __construct(string $name, string|Stream $file, int $length=-1, int $error=0, string|null $clientName=null, string|null $clientType=null) {
         if (is_string($file)) {
-            $this->mFile = $file;
+            $this->file = $file;
 
         } else {
-            $this->mStream = $file;
+            $this->stream = $file;
 
-            if (!$this->mStream->isReadable()) {
+            if (!$this->stream->isReadable()) {
                 throw new Exception("Invalid Stream used in File. The Stream must be reable.");
             }
         }
@@ -124,93 +92,99 @@ class HttpFile implements File {
             if (is_string($file) && $this->isReady()) {
                 $length = filesize($file);
 
-                if ($length !== false) {
-                    $this->mSize = $length;
+                if ($length === false) {
+                    $length = -1;
                 }
 
             } else if (!is_string($file)) {
-                $length = $this->mStream->getLength();
+                $length = $this->stream->getLength();
             }
         }
+
+        $this->name = $name;
+        $this->error = $error;
+        $this->size = $length;
+        $this->clientName = $clientName;
+        $this->clientType = $clientType;
     }
 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\File")]
+    #[Override("im\http2\msg\File")]
     public function getName(): string {
-        return $this->mName;
+        return $this->name;
     }
 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\File")]
+    #[Override("im\http2\msg\File")]
     public function getStream(): Stream {
-        if ($this->mStream == null || $this->mStream->getFlags() == 0) {
-            if ($this->mFile != null) {
-                $this->mStream = new FileStream($this->mFile, 'r', true);
+        if ($this->stream == null || $this->stream->getFlags() == 0) {
+            if ($this->file != null) {
+                $this->stream = new FileStream($this->file, 'r', true);
 
             } else {
-                $this->mStream = new RawStream();
+                $this->stream = new RawStream();
             }
         }
 
-        return $this->mStream;
+        return $this->stream;
     }
 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\File")]
+    #[Override("im\http2\msg\File")]
     public function isReady(): bool {
-        return $this->mError === 0;
+        return $this->error === 0;
     }
 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\File")]
+    #[Override("im\http2\msg\File")]
     public function getLength(): int {
-        return $this->mSize;
+        return $this->size;
     }
 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\File")]
+    #[Override("im\http2\msg\File")]
     public function getError(): int {
-        return $this->mError;
+        return $this->error;
     }
 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\File")]
+    #[Override("im\http2\msg\File")]
     public function getClientFilename(): string|null {
-        return $this->mClientName;
+        return $this->clientName;
     }
 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\File")]
+    #[Override("im\http2\msg\File")]
     public function getClientMediaType(): string|null {
-        return $this->mClientType;
+        return $this->clientType;
     }
 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\File")]
+    #[Override("im\http2\msg\File")]
     public function isSaved(): bool {
-        return $this->mSaved;
+        return $this->saved;
     }
 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\File")]
+    #[Override("im\http2\msg\File")]
     public function save(string|Stream $target): bool {
         if ((!is_string($target) || !is_dir(dirname($target))) && !($target instanceof Stream)) {
             throw new Exception("Target must be a valid file path or an instance of " . Stream::class);
@@ -224,8 +198,8 @@ class HttpFile implements File {
 
         $status = false;
 
-        if (is_string($target) && $this->mFile != null) {
-            $source = $this->mFile;
+        if (is_string($target) && $this->file != null) {
+            $source = $this->file;
             $catcher = new ErrorCatcher();
             $catcher->run(function() use ($target, $source, &$status) {
                 if (strpos($target, '://') === false && is_uploaded_file($source)) {
@@ -238,11 +212,11 @@ class HttpFile implements File {
             });
 
             if ($status) {
-                $this->mFile = $target;
+                $this->file = $target;
 
-                if ($this->mStream != null) {
-                    $this->mStream->close();
-                    $this->mStream = null;
+                if ($this->stream != null) {
+                    $this->stream->close();
+                    $this->stream = null;
                 }
 
             } else if ($catcher->getException() != null) {
@@ -261,28 +235,11 @@ class HttpFile implements File {
                 $targetStream = new FileStream($target, 'w+');
             }
 
-            try {
-                while (($bytes = $stream->read(4096)) != null) {
-                    $wc = $targetStream->write($bytes);
+            $status = $targetStream->writeFromStream($stream) != -1;
 
-                    if ($wc < 0 || $wc != strlen($bytes)) {
-                        return false;
-                    }
-                }
-
-            } catch (Throwable $e) {
-                if (is_string($target)) {
-                    $targetStream->close();
-                }
-
-                throw $e;
-            }
-
-            $this->mStream->close();
-            $this->mStream = $targetStream;
-            $this->mFile = is_string($target) ? $target : null;
-
-            $status = true;
+            $this->stream->close();
+            $this->stream = $targetStream;
+            $this->file = is_string($target) ? $target : null;
         }
 
         if ($status) {

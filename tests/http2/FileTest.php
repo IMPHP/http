@@ -2,7 +2,7 @@
 /*
  * This file is part of the IMPHP Project: https://github.com/IMPHP
  *
- * Copyright (c) 2016 Daniel Bergløv, License: MIT
+ * Copyright (c) 2018 Daniel Bergløv, License: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
  * and associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -18,35 +18,39 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+namespace im\test\http2;
 
-namespace im\http\msg;
-
-use im\io\Stream;
+use PHPUnit\Framework\TestCase;
+use im\http2\File;
+use im\io\RawStream;
 
 /**
- * Defines a parser that is used to parse the request body
  *
- * The request body can come in many forms like JSON,
- * XML, POST Data and more. This interface allows custom parsers to be used
- * to parse data within `im\http\msg\Request`.
- * 
- * @deprecated 
- *      This has been replaced by `im\http2\msg\ContentParser`
  */
-interface StreamParser {
+class FileTest extends TestCase {
 
     /**
-     * Parse data from the body stream
      *
-     * @param $body
-     *      The stream to parse
-     *
-     * @param $mime
-     *      The mime type of the stream content
-     *
-     * @return
-     *      The parser should return `NULL` if it does not
-     *      support parsing the current content of the body.
      */
-    function parse(Stream $body, string $mime = null): mixed;
+    public function init(): File {
+        $stream = new RawStream();
+        $stream->write("This is a test");
+
+        return new File("test", $stream);
+    }
+
+    /**
+     *
+     */
+    public function test_basic(): void {
+        $file = $this->init();
+        $stream = new RawStream();
+
+        $file->save($stream);
+
+        $this->assertEquals(
+            "This is a test",
+            (string) $stream
+        );
+    }
 }

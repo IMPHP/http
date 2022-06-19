@@ -23,6 +23,9 @@ namespace im\http\msg;
 
 /**
  * Defines a Request builder for the http message specification
+ * 
+ * @deprecated 
+ *      This has been replaced by `im\http2\msg\Response`
  */
 interface ResponseBuilder extends Response, MessageBuilder {
 

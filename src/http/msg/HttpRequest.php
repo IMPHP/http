@@ -29,6 +29,9 @@ use im\util\IndexArray;
  *
  * This abstraction is used to provide read-only access to a
  * request builder in order to comply with the `Request` interface.
+ * 
+ * @deprecated 
+ *      This has been replaced by `im\http2\Request`
  */
 class HttpRequest extends HttpMessage implements Request {
 

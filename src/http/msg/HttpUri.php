@@ -26,6 +26,9 @@ namespace im\http\msg;
  *
  * This abstraction is used to provide read-only access to a
  * uri builder in order to comply with the `Uri` interface.
+ * 
+ * @deprecated 
+ *      This has been replaced by `im\http2\Uri`
  */
 class HttpUri implements Uri {
 

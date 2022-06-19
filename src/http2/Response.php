@@ -19,18 +19,18 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-namespace im\http\msg;
+namespace im\http2;
 
-use im\io\Stream;
 use Exception;
+use im\http2\msg\Response as IResponse;
+use im\http2\msg\BaseMessage;
+use im\io\Stream;
+use im\io\FileStream;
 
 /**
- * An implementation of `im\http\msg\ResponseBuilder`
- * 
- * @deprecated 
- *      This has been replaced by `im\http2\Response`
+ * An implementation of `im\http2\msg\Response`
  */
-class HttpResponseBuilder extends HttpMessageBuilder implements ResponseBuilder {
+class Response extends BaseMessage implements IResponse {
 
     /**
      * @internal
@@ -55,7 +55,7 @@ class HttpResponseBuilder extends HttpMessageBuilder implements ResponseBuilder 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\ResponseBuilder")]
+    #[Override("im\http2\msg\Response")]
     public function getStatusCode(): int {
         return $this->status;
     }
@@ -63,11 +63,11 @@ class HttpResponseBuilder extends HttpMessageBuilder implements ResponseBuilder 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\ResponseBuilder")]
+    #[Override("im\http2\msg\Response")]
     public function getStatusReason(): string {
         if ($this->reason == null) {
             $code = $this->getStatusCode();
-            $const = Response::class . "::REASON_{$code}";
+            $const = IResponse::class . "::REASON_{$code}";
 
             if (!defined($const)) {
                 return match ( intval( $code / 100 ) ) {
@@ -89,8 +89,8 @@ class HttpResponseBuilder extends HttpMessageBuilder implements ResponseBuilder 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\ResponseBuilder")]
-    public function setStatus(int $code, string $reasonPhrase = null): void {
+    #[Override("im\http2\msg\Response")]
+    public function setStatus(int $code, string|null $reasonPhrase = null): void {
         if ($code < 100 || $code > 599) {
             throw new Exception("Invalid status code '$code'");
         }
@@ -108,10 +108,10 @@ class HttpResponseBuilder extends HttpMessageBuilder implements ResponseBuilder 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\ResponseBuilder")]
-    public function setBody(Stream $body): void {
-        if (!$body->isWritable()) {
-            throw new Exception("A response body must be writable");
+    #[Override("im\http2\msg\BaseMessage")]
+    public function setStream(Stream $body): void {
+        if (!$body->isReadable()) {
+            throw new Exception("A response body must be readable");
         }
 
         $this->stream = $body;
@@ -120,23 +120,7 @@ class HttpResponseBuilder extends HttpMessageBuilder implements ResponseBuilder 
     /**
      * @inheritDoc
      */
-    #[Override("im\http\msg\HttpMessageBuilder")]
-    public function getBuilder(): ResponseBuilder {
-        return parent::getBuilder();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\ResponseBuilder")]
-    public function getFinal(): Response {
-        return new HttpResponse($this);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\ResponseBuilder")]
+    #[Override("im\http2\msg\BaseMessage")]
     public function toString(): string {
         $headers = parent::toString();
 
@@ -153,7 +137,39 @@ class HttpResponseBuilder extends HttpMessageBuilder implements ResponseBuilder 
             $this->getStatusCode(),
             $this->getStatusReason(),
             $headers,
-            $this->getBody()->toString()
+            (string) $this->getStream()
         );
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\BaseMessage")]
+    public function print(): void {
+        $body = $this->getStream();
+        $headers = parent::toString();
+
+        if (!$this->hasHeader("content-type")) {
+            if (!empty($headers)) {
+                $headers = "\n" . $headers;
+            }
+
+            $headers = "Content-Type: text/html; charset=utf-8" . $headers;
+        }
+
+        if ($body->isSeekable()) {
+            $body->rewind();
+        }
+
+        $output = new FileStream("php://output", "w");
+        $output->write(sprintf("HTTP/%s %s %s\n\n%s\n\n",
+            $this->getProtocolVersion(),
+            $this->getStatusCode(),
+            $this->getStatusReason(),
+            $headers
+        ));
+
+        $output->writeFromStream($body);
+        $output->close();
     }
 }

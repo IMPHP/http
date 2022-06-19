@@ -19,257 +19,43 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-namespace im\http\msg;
+namespace im\http2\msg;
 
+use Traversable;
+use Exception;
 use im\io\Stream;
 use im\io\RawStream;
-use im\util\MapArray;
-use im\util\ListArray;
+use im\util\ImmutableListArray;
+use im\util\MutableMappedArray;
 use im\util\Map;
-use im\util\Vector;
-use Exception;
-use Traversable;
+use im\util\HashSet;
 
 /**
- * This is an implementation of the `im\http\msg\MessageBuilder` interface
- * 
- * @deprecated 
- *      This has been replaced by `im\http2\msg\BaseMessage`
+ * This is an implementation of the `im\http2\msg\Message` interface
  */
-abstract class HttpMessageBuilder implements MessageBuilder {
+abstract class BaseMessage implements Message {
 
     /** @internal */
-    protected ?Stream $stream = null;
+    protected ?Stream $body = null;
 
     /** @internal */
-    protected MapArray $headers;
+    protected MutableMappedArray $headers;
+
+    /** @internal */
+    protected MutableMappedArray $attributes;
 
     /** @internal */
     protected string $protocol = "1.1";
 
     /**
      * PSR7 states that header keys must be Case-insensitive.
-     * imphp/http adopts this rules and so we need something
+     * imphp/http2 adopts this rule and so we need something
      * that can produce a proper case for the keys.
      *
      * @internal
      */
-    protected function headerKey(string $key): string {
+    protected static function headerKey(string $key): string {
         return preg_replace_callback("/\b\w+\b/", function($match) { return ucfirst(strtolower($match[0])); }, str_replace(" ", "-", trim($key, " \t")));
-    }
-
-    /**
-     *
-     */
-    public function __construct() {
-        $this->headers = new Map();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\MessageBuilder")]
-    public function hasHeader(string $name): bool {
-        return $this->headers->isset( $this->headerKey($name) );
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\MessageBuilder")]
-    public function inHeader(string $name, string $search): bool {
-        $header = $this->headers->get( $this->headerKey($name) );
-
-        if ($header == null || $header->length() == 0) {
-            return false;
-        }
-
-        foreach ($header as $value) {
-            if (stripos($value, $search) !== false) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\MessageBuilder")]
-    public function getHeader(string $name): ListArray {
-        $header = $this->headers->get( $this->headerKey($name) );
-
-        if ($header == null) {
-            return new Vector();
-        }
-
-        return $header;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\MessageBuilder")]
-    public function getHeaderLine(string $name): ?string {
-        $header = $this->headers->get( $this->headerKey($name) );
-
-        if ($header == null || $header->length() == 0) {
-            return null;
-        }
-
-        return $header->join(", ");
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\MessageBuilder")]
-    public function addHeader(string $name, string ...$values): void {
-        if (count($values) == 0) {
-            throw new Exception("You must provide at least one value to the header");
-        }
-
-        $name = $this->headerKey($name);
-        $header = $this->headers->get($name);
-
-        if ($header == null) {
-            $this->headers->set($name, ($header = new Vector()));
-
-        } else {
-            // Unlock the immutable header
-            $this->headers->set($name, ($header = $header->copy()));
-        }
-
-        foreach ($values as $value) {
-            $value = $this->filterHeader($value);
-
-            if (preg_match("/^[a-z]+, [0-9]{2} [a-z]+ [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} [a-z]+$/i", $value)) {
-                $header->add($value);
-
-            } else if ($name == "Cookie") {
-                foreach (explode(";", $value) as $subval) {
-                    $header->add(trim($subval));
-                }
-
-            } else if ($name == "Set-Cookie") {
-                $header->add($value);
-
-            } else {
-                foreach (explode(",", $value) as $subval) {
-                    $header->add(trim($subval));
-                }
-            }
-        }
-
-        $header->lock();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\MessageBuilder")]
-    public function setHeader(string $name, string ...$values): void {
-        if (count($values) == 0) {
-            throw new Exception("You must provide at least one value to the header");
-        }
-
-        $this->removeHeader($name);
-        $this->addHeader($name, ...$values);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\MessageBuilder")]
-    public function removeHeader(string $name): void {
-        $this->headers->unset($this->headerKey($name));
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\MessageBuilder")]
-    public function getProtocolVersion(): string {
-        return $this->protocol;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\MessageBuilder")]
-    public function setProtocolVersion(string $version): void {
-        if (!preg_match("/^[0-9]\.[0-9]+$/", $version)) {
-            throw new Exception("Invalid protocol '$version'");
-        }
-
-        $this->protocol = $version;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\MessageBuilder")]
-    public function getBody(): Stream {
-        if ($this->stream == null || $this->stream->getFlags() === 0) {
-            $this->stream = new RawStream();
-        }
-
-        return $this->stream;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\MessageBuilder")]
-    public function getBuilder(): MessageBuilder {
-        return clone $this;
-    }
-
-    /**
-     * @php
-     */
-    #[Override("im\http\msg\MessageBuilder")]
-    public function getIterator(): Traversable {
-        return $this->headers->getIterator();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    #[Override("im\http\msg\MessageBuilder")]
-    public function toString(): string {
-        $headers = [];
-
-        foreach ($this as $name => $value) {
-            if ($name == "Cookie") {
-                $headers[] = sprintf("Cookie: %s", $value->join("; "));
-
-            } else if ($name == "Set-Cookie") {
-                foreach ($value as $cookie) {
-                    $headers[] = sprintf("Set-Cookie: %s", $cookie);
-                }
-
-            } else {
-                $headers[] = sprintf("%s: %s", $name, $value->join(", "));
-            }
-        }
-
-        return implode("\n", $headers);
-    }
-
-    /**
-     * @php
-     */
-    public function __toString() {
-        return $this->toString();
-    }
-
-    /**
-     * @php
-     */
-    public function __clone() {
-        $this->headers = $this->headers->copy();
     }
 
     /**
@@ -289,7 +75,7 @@ abstract class HttpMessageBuilder implements MessageBuilder {
      *
      * @internal
      */
-    protected function filterHeader(string $value): string {
+    protected static function filterHeader(string $value): string {
         $value = trim(preg_replace("/[ \t]+/", " ", $value));
         $length = strlen($value);
         $filtered = '';
@@ -328,5 +114,264 @@ abstract class HttpMessageBuilder implements MessageBuilder {
         }
 
         return $filtered;
+    }
+
+    /**
+     *
+     */
+    public function __construct() {
+        $this->headers = new Map();
+        $this->attributes = new Map();
+    }
+
+    /**
+     * @php
+     */
+    #[Override("im\http2\msg\Message")]
+    public function getIterator(): Traversable {
+        foreach ($this->headers as $name => $header) {
+            yield $name => $header;
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function getAttribute(string $name, mixed $default = null): mixed {
+        return $this->attributes->get($name) ?? $default;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function hasAttribute(string $name): bool {
+        return $this->attributes->isset($name);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function setAttribute(string $name, mixed $value): void {
+        $this->attributes->set($name, $value);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function removeAttribute(string $name): void {
+        $this->attributes->unset($name);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function hasHeader(string $name): bool {
+        return $this->headers->isset( static::headerKey($name) );
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function inHeader(string $name, string $search): bool {
+        $header = $this->headers->get( static::headerKey($name) );
+
+        if ($header == null || $header->length() == 0) {
+            return false;
+        }
+
+        foreach ($header as $value) {
+            if (stripos($value, $search) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function getHeader(string $name): ImmutableListArray {
+        $header = $this->headers->get( static::headerKey($name) );
+
+        if ($header == null) {
+            return new HashSet();
+        }
+
+        return $header;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function getHeaderLine(string $name): ?string {
+        $header = $this->headers->get( static::headerKey($name) );
+
+        if ($header == null || $header->length() == 0) {
+            return null;
+        }
+
+        return $header->join(", ");
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function addHeader(string $name, string ...$values): void {
+        if (count($values) == 0) {
+            throw new Exception("You must provide at least one value to the header");
+        }
+
+        $name = static::headerKey($name);
+        $header = $this->headers->get($name);
+
+        if ($header == null) {
+            $this->headers->set($name, ($header = new HashSet()));
+        }
+
+        foreach ($values as $value) {
+            $value = static::filterHeader($value);
+
+            if (preg_match("/^[a-z]+, [0-9]{2} [a-z]+ [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} [a-z]+$/i", $value)) {
+                $header->add($value);
+
+            } else if ($name == "Cookie") {
+                foreach (explode(";", $value) as $subval) {
+                    $header->add(trim($subval));
+                }
+
+            } else if ($name == "Set-Cookie") {
+                $header->add($value);
+
+            } else {
+                foreach (explode(",", $value) as $subval) {
+                    $header->add(trim($subval));
+                }
+            }
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function setHeader(string $name, string ...$values): void {
+        if (count($values) == 0) {
+            throw new Exception("You must provide at least one value to the header");
+        }
+
+        $this->removeHeader($name);
+        $this->addHeader($name, ...$values);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function removeHeader(string $name): void {
+        $this->headers->unset(static::headerKey($name));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function getProtocolVersion(): string {
+        return $this->protocol;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function setProtocolVersion(string $version): void {
+        if (!in_array($version, ["1.1", "2.0", "2"])) {
+            throw new Exception("Invalid protocol '$version'");
+
+        } else if ($version == "2") {
+            $version = "2.0";
+        }
+
+        $this->protocol = $version;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function getStream(): Stream {
+        if ($this->body == null || $this->body->getFlags() === 0) {
+            $this->body = new RawStream();
+        }
+
+        return $this->body;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function setStream(Stream $body): void {
+        if ($body->getFlags() === 0) {
+            throw new Exception("The body stream is inative");
+        }
+
+        $this->body = $body;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function toString(): string {
+        $headers = [];
+
+        foreach ($this as $name => $value) {
+            if ($name == "Cookie") {
+                $headers[] = sprintf("Cookie: %s", $value->join("; "));
+
+            } else if ($name == "Set-Cookie") {
+                foreach ($value as $cookie) {
+                    $headers[] = sprintf("Set-Cookie: %s", $cookie);
+                }
+
+            } else {
+                $headers[] = sprintf("%s: %s", $name, $value->join(", "));
+            }
+        }
+
+        return implode("\n", $headers);
+    }
+
+    /**
+     * @php
+     */
+    public function __toString() {
+        return $this->toString();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[Override("im\http2\msg\Message")]
+    public function clone(): static {
+        return clone $this;
+    }
+
+    /**
+     * @php
+     */
+    public function __clone() {
+        $this->headers = $this->headers->clone();
+        $this->attributes = $this->attributes->clone();
     }
 }

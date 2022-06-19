@@ -12,41 +12,34 @@
  *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+ * THE SOFTWARE IS PROVIDED "AS IS"; WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
  * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-namespace im\http\msg;
+namespace im\http2\msg;
 
 use im\io\Stream;
 
 /**
  * Defines a parser that is used to parse the request body
- *
- * The request body can come in many forms like JSON,
- * XML, POST Data and more. This interface allows custom parsers to be used
- * to parse data within `im\http\msg\Request`.
- * 
- * @deprecated 
- *      This has been replaced by `im\http2\msg\ContentParser`
  */
-interface StreamParser {
+interface ContentParser {
 
     /**
      * Parse data from the body stream
      *
-     * @param $body
+     * @param $stream
      *      The stream to parse
      *
-     * @param $mime
+     * @param $contentType
      *      The mime type of the stream content
      *
      * @return
      *      The parser should return `NULL` if it does not
      *      support parsing the current content of the body.
      */
-    function parse(Stream $body, string $mime = null): mixed;
+    function parse(Stream $stream, string $contentType): mixed;
 }

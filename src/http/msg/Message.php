@@ -31,6 +31,9 @@ use IteratorAggregate;
  * @note
  *      This interface extends IteratorAggregate to allow iterating through all
  *      the available headers within this message.
+ * 
+ * @deprecated 
+ *      This has been replaced by `im\http2\msg\Message`
  */
 interface Message extends IteratorAggregate {
 

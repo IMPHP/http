@@ -27,6 +27,9 @@ use Traversable;
 
 /**
  * This is an implementation of the `im\http\msg\Message` interface
+ * 
+ * @deprecated 
+ *      This has been replaced by `im\http2\msg\BaseMessage`
  */
 abstract class HttpMessage implements Message {
 

@@ -56,6 +56,9 @@ use im\util\IndexArray;
  * update one of these sources, the params must follow. For example
  * if you switch the Uri object, the query params must be updated to mirror
  * the new query string in the Uri.
+ * 
+ * @deprecated 
+ *      This has been replaced by `im\http2\msg\Request`
  */
 interface Request extends Message {
 

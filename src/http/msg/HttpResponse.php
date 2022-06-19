@@ -26,6 +26,9 @@ namespace im\http\msg;
  *
  * This abstraction is used to provide read-only access to a
  * response builder in order to comply with the `Response` interface.
+ * 
+ * @deprecated 
+ *      This has been replaced by `im\http2\Response`
  */
 class HttpResponse extends HttpMessage implements Response {
 
